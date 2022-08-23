@@ -1,13 +1,17 @@
+import { useRef, useEffect } from 'react';
 import { styled } from '../../styles/stitches.config';
+import { OpenMeteoForecastResponse } from '../../pages/api/WeatherServices';
+import moment from 'moment/moment';
+import WeatherIcon from './Icon';
 
 const Main = styled('div', {
    display: 'flex',
    flexDirection: 'column',
    gap: '1.3rem',
-   position: 'relative',
+   position: 'relative'
 });
 
-const GRADIENT_WIDTH = 25;
+const GRADIENT_WIDTH = 0; //25;
 
 const MainScroll = styled('div', {
    display: 'flex',
@@ -16,7 +20,7 @@ const MainScroll = styled('div', {
    overflow: 'scroll',
 
    paddingInline: GRADIENT_WIDTH + 'px',
-
+   paddingBottom: '5px',
    left: -GRADIENT_WIDTH + 'px',
 
    scrollbarWidth: 'thin',
@@ -24,17 +28,17 @@ const MainScroll = styled('div', {
 
    '&::-webkit-scrollbar': {
       width: '0',
-      height: '5px',
+      height: '5px'
    },
 
    '&::-webkit-scrollbar-track': {
       background: '#0000',
-      padding: '2px',
+      padding: '2px'
    },
 
    '&::-webkit-scrollbar-thumb': {
       backgroundColor: '#0000',
-      borderRadius: '4px',
+      borderRadius: '4px'
    },
 
    '&:hover, &:focus': {
@@ -43,19 +47,19 @@ const MainScroll = styled('div', {
 
       '&::-webkit-scrollbar': {
          width: '0',
-         height: '5px',
+         height: '5px'
       },
 
       '&::-webkit-scrollbar-track': {
          background: '#0000',
-         padding: '2px',
+         padding: '2px'
       },
 
       '&::-webkit-scrollbar-thumb': {
          backgroundColor: '$color4',
-         borderRadius: '4px',
-      },
-   },
+         borderRadius: '4px'
+      }
+   }
 });
 
 const HourCard = styled('div', {
@@ -67,7 +71,7 @@ const HourCard = styled('div', {
    backgroundColor: '$color4',
    padding: '0.7rem 1.2rem',
    borderRadius: '0.5rem',
-   gap: '0.7rem',
+   gap: '0.7rem'
 });
 
 const Gradient = styled('div', {
@@ -81,19 +85,19 @@ const Gradient = styled('div', {
          left: {
             left: 0,
             background:
-               'linear-gradient(90deg, $color1 0%, rgba(255,0,0,0) 100%)',
+               'linear-gradient(90deg, $color1 0%, rgba(255,0,0,0) 100%)'
          },
          right: {
             right: 0,
             background:
-               'linear-gradient(270deg, $color1 0%, rgba(255,0,0,0) 100%)',
-         },
-      },
+               'linear-gradient(270deg, $color1 0%, rgba(255,0,0,0) 100%)'
+         }
+      }
    },
 
    defaultVariants: {
-      side: 'left',
-   },
+      side: 'left'
+   }
 });
 
 const Hour = styled('span', {
@@ -106,18 +110,10 @@ const Hour = styled('span', {
    textAlign: 'center',
    textTransform: 'uppercase',
    letterSpacing: '0.1em',
-   lineHeight: '1.2em',
+   lineHeight: '1.2em'
 });
 
-const Icon = styled('img', {
-   width: '3rem',
-   aspectRatio: 1,
-   borderRadius: '0.5rem',
-   // backgroundColor: '$color6',
-   fontFamily: 'weathericons',
-   color: '$color12',
-   transform: 'scale(1.5)',
-});
+
 
 const Temp = styled('span', {
    all: 'unset',
@@ -127,65 +123,74 @@ const Temp = styled('span', {
    margin: '0',
    padding: '0',
    textAlign: 'center',
-   lineHeight: '1.2em',
+   lineHeight: '1.2em'
 });
 
 // ... repeat Temp for more data points
 
-const hours = [
-   ['now', '18°'],
-   ['10pm', '16°'],
-   ['11pm', '15°'],
-   ['12am', '15°'],
-   ['1am', '13°'],
-   ['2am', '12°'],
-   ['2am', '12°'],
-   ['2am', '12°'],
-];
 
-export default function Hourly() {
+
+
+export default function Hourly({ data }: { data?: OpenMeteoForecastResponse.RootObject }) {
+   // const scrollRef = useRef();
+   // useEffect(() => {
+   //
+   //    document.addEventListener('wheel', function(e) {
+   //       // e.preventDefault();
+   //       let container = scrollRef.current;
+   //       let containerScrollPosition = container.scrollLeft;
+   //       container.scrollTo({
+   //          top: 0,
+   //          left: containerScrollPosition + e.deltaY,
+   //          behavior: 'auto' //if you want smooth scrolling
+   //
+   //       });
+   //    }, {capture: true, passive: false });
+   //
+   // }, []);
    return (
       <Main>
-         hola
          <MainScroll
-            id="hourly-scroll"
-            onWheel={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               var container = document.getElementById('hourly-scroll')!;
-               var containerScrollPosition = container.scrollLeft;
-               container.scrollTo({
-                  top: 0,
-                  left: containerScrollPosition + e.deltaY,
-                  behavior: 'auto', //if you want smooth scrolling
-               });
-            }}
+            // ref={scrollRef}
+            id='hourly-scroll'
+            // onWheel={(e) => {
+            //    e.preventDefault();
+            //    e.stopPropagation();
+            //    var container = document.getElementById('hourly-scroll')!;
+            //    var containerScrollPosition = container.scrollLeft;
+            //    container.scrollTo({
+            //       top: 0,
+            //       left: containerScrollPosition + e.deltaY,
+            //       behavior: 'auto', //if you want smooth scrolling
+            //
+            //    });
+            // }}
          >
-            <Gradient side="left" />
-            {hours.map(([hour, temp], index) => {
+            {/*<Gradient side='left' />*/}
+            {data?.hourly.time.slice(0, 24).map((hour, index) => {
                return (
                   <HourCard
                      key={index}
-                     onWheel={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        var container =
-                           document.getElementById('hourly-scroll')!;
-                        var containerScrollPosition = container.scrollLeft;
-                        container.scrollTo({
-                           top: 0,
-                           left: containerScrollPosition + e.deltaY,
-                           behavior: 'auto', //if you want smooth scrolling
-                        });
-                     }}
+                     // onWheel={(e) => {
+                     //    e.preventDefault();
+                     //    e.stopPropagation();
+                     //    var container =
+                     //       document.getElementById('hourly-scroll')!;
+                     //    var containerScrollPosition = container.scrollLeft;
+                     //    container.scrollTo({
+                     //       top: 0,
+                     //       left: containerScrollPosition + e.deltaY,
+                     //       behavior: 'auto' //if you want smooth scrolling
+                     //    });
+                     // }}
                   >
-                     <Hour>{hour}</Hour>
-                     <Icon src="weather-icons/cloud_sun_fill_large.svg" />
-                     <Temp>{temp}</Temp>
+                     <Hour>{moment(hour).format('H[:]mm')}</Hour>
+                     <WeatherIcon code={data?.hourly.weathercode[index]} />
+                     <Temp>{data?.hourly.temperature_2m[index].toFixed(0)}º</Temp>
                   </HourCard>
                );
             })}
-            <Gradient side="right" />
+            {/*<Gradient side='right' />*/}
          </MainScroll>
       </Main>
    );

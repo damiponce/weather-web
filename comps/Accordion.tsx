@@ -113,6 +113,7 @@ export const AccordionItem = StyledItem;
 export const AccordionTrigger = React.forwardRef(
    ({ children, ...props }, forwardedRef) => (
       <StyledHeader>
+         {/*// @ts-ignore*/}
          <StyledTrigger {...props} ref={forwardedRef}>
             {children}
             {/* <StyledChevron aria-hidden /> */}
@@ -122,6 +123,7 @@ export const AccordionTrigger = React.forwardRef(
 );
 export const AccordionContent = React.forwardRef(
    ({ children, ...props }, forwardedRef) => (
+      // @ts-ignore
       <StyledContent {...props} ref={forwardedRef}>
          <StyledContentText>{children}</StyledContentText>
       </StyledContent>

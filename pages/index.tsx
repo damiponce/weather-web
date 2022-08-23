@@ -21,71 +21,15 @@ import Daily from '../components/weather/Daily';
 
 import {
    useQuery,
-   useMutation,
    useQueryClient,
-   QueryObserver,
 } from 'react-query';
+import { openMeteoFetchForecast } from './api/WeatherServices';
 
-const Container = styled('div', {
-   minHeight: '100vh',
-   padding: '0 2rem',
-   display: 'flex',
-   flexDirection: 'column',
-   alignItems: 'center',
-});
-
-const Footer = styled('footer', {
-   display: 'flex',
-   height: 'max-content',
-   padding: '2rem 0',
-   borderTop: '1px solid #eaeaea',
-   justifyContent: 'center',
-   alignItems: 'center',
-   marginTop: '24px',
-});
-
-const Main = styled('main', {
-   minHeight: '100%',
-   padding: '0rem 0',
-   flex: 1,
-   display: 'flex',
-   flexDirection: 'column',
-   flexWrap: 'nowrap',
-   justifyContent: 'flex-start',
-   alignItems: 'center',
-   gap: '1rem',
-});
-
-const Section = styled('div', {
-   width: '100%',
-   display: 'flex',
-   flexWrap: 'nowrap',
-   justifyContent: 'space-between', // <-- which one?
-   alignItems: 'center',
-   overflow: 'hidden',
-   variants: {
-      flex: {
-         row: {
-            flexDirection: 'row',
-         },
-         column: {
-            flexDirection: 'column',
-         },
-      },
-   },
-});
-
-const Widget = styled('div', {
-   flex: 1,
-   width: '100%',
-   height: '100%',
-   overflow: 'hidden',
-});
 
 const Home: NextPage = () => {
    const [cookies, setCookie, removeCookie] = useCookies([
       'settings',
-      'lastLocation',
+      'lastLocation'
    ]);
    // const [data, setData] = useState([]); //
 
@@ -103,68 +47,69 @@ const Home: NextPage = () => {
          // console.log(cookies);
          setTheme(cookies.settings.theme);
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
 
    // QUERY
    const [cacheIsEnabled, setCacheIsEnabled] = useState(false);
    const [apiCall, setApiCall] = useState('');
-   const API = useRef('');
+   const API = useRef({ lat: 0, lon: 0, timezone: 'America/Buenos_Aires', place: '' });
    const queryClient = useQueryClient();
-   const { data, status, error, isFetching } = useQuery(
+   const { data: weatherCache, status, error, isFetching } = useQuery(
       ['weather_cache'],
       async () => {
-         const response = await fetch(API.current);
-         return await response.json();
+         let tempFetch = await openMeteoFetchForecast(API.current);
+
+         return {...tempFetch, place: API.current.place};
       },
       {
-         enabled: !!cacheIsEnabled,
+         enabled: cacheIsEnabled,
+         staleTime: 0,
          onSuccess: (data) => {
             console.log('~~~~~~~~~~~');
             console.log(data);
             // console.log(status);
             console.log('~~~~~~~~~~~');
-         },
+         }
       }
-   );
+   )
+   ;
 
-   // console.log('~~~~~~~~~~~');
-   // console.log(data);
-   // console.log(status);
-   // console.log('~~~~~~~~~~~');
 
-   // useEffect(() => {
-   //    {
-   //       apiCall !== '' && null;
-   //    }
-   //    console.log('>>>>>>>>>>>>>>>');
-   //    console.log('API call: ', apiCall);
-   //    console.log(data);
-   //    console.log(status);
-   //    console.log('>>>>>>>>>>>>>>>');
-   //    // debugger;
-   // }, [apiCall]);
+
+   useEffect(() => {
+      navigator.geolocation.getCurrentPosition(function(position) {
+         API.current = {lat: position.coords.latitude, lon: position.coords.longitude, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, place: 'Current location'};
+         setCacheIsEnabled(true);
+         queryClient.refetchQueries(['weather_cache'], {
+            active: true
+         });
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+
 
    return (
       <Container>
          <Head>
             <title>Weather by dam</title>
             <meta
-               name="description"
-               content="Weather website with sources from various APIs"
+               name='description'
+               content='Weather website with sources from various APIs'
             />
-            <link rel="icon" href="/favicon.ico" />
+            <link rel='icon' href='/favicon.ico' />
          </Head>
          <Section
-            flex="row"
-            css={{ height: '6rem', marginBottom: '24px', maxWidth: '1100px' }}
+            flex='row'
+            css={{ height: '6rem', marginBottom: '24px', maxWidth: '1100px', position: 'relative', overflow: 'visible' }}
          >
             <Header
-               apiCall={(e: string) => {
+               apiCall={(e: {lat: number, lon: number, timezone: string, place: string}) => {
                   // setApiCall(e);
                   API.current = e;
                   setCacheIsEnabled(true);
                   queryClient.refetchQueries(['weather_cache'], {
-                     active: true,
+                     active: true
                   });
                }}
                status={status}
@@ -182,20 +127,20 @@ const Home: NextPage = () => {
                {':>BFJNRVZ^bfjnrvz|'}
             </p> */}
             <Section
-               flex="row"
-               css={{ gap: '2rem', '@bp4': { flexDirection: 'column' } }}
+               flex='row'
+               css={{ gap: '2rem', '@bp4': { gap: '60px', flexDirection: 'column' } }}
             >
                <Widget css={{ flex: 2 }}>
-                  <Current data={status === 'success' ? data.current : null} />
+                  <Current data={status === 'success' ? weatherCache : undefined} />
                </Widget>
                <Widget css={{ flex: 3 }}>
-                  <Hourly />
+                  <Hourly data={status === 'success' ? weatherCache : undefined} />
                </Widget>
             </Section>
 
-            <Section flex="column">
+            <Section flex='column'>
                <Widget>
-                  <Daily />
+                  <Daily data={status === 'success' ? weatherCache : undefined} />
                </Widget>
             </Section>
             {/* 
@@ -227,3 +172,61 @@ const Home: NextPage = () => {
 };
 
 export default Home;
+
+
+
+const Container = styled('div', {
+   minHeight: '100vh',
+   padding: '0 2rem',
+   display: 'flex',
+   flexDirection: 'column',
+   alignItems: 'center'
+});
+
+const Footer = styled('footer', {
+   display: 'flex',
+   height: 'max-content',
+   padding: '2rem 0',
+   borderTop: '1px solid #eaeaea',
+   justifyContent: 'center',
+   alignItems: 'center',
+   marginTop: '24px'
+});
+
+const Main = styled('main', {
+   minHeight: '100%',
+   padding: '0rem 0',
+   flex: 1,
+   display: 'flex',
+   flexDirection: 'column',
+   flexWrap: 'nowrap',
+   justifyContent: 'flex-start',
+   alignItems: 'center',
+   gap: '1rem'
+});
+
+const Section = styled('div', {
+   width: '100%',
+   display: 'flex',
+   flexWrap: 'nowrap',
+   justifyContent: 'space-between', // <-- which one?
+   alignItems: 'center',
+   overflow: 'hidden',
+   variants: {
+      flex: {
+         row: {
+            flexDirection: 'row'
+         },
+         column: {
+            flexDirection: 'column'
+         }
+      }
+   }
+});
+
+const Widget = styled('div', {
+   flex: 1,
+   width: '100%',
+   height: '100%',
+   overflow: 'hidden'
+});

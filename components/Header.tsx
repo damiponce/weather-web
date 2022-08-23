@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { keyframes, styled } from '../styles/stitches.config';
 import {
    SunIcon,
@@ -10,12 +10,17 @@ import {
    CheckIcon,
    DotFilledIcon,
    GearIcon,
+   MagnifyingGlassIcon
 } from '@radix-ui/react-icons';
 import { ToggleGroup, ToggleGroupItem } from '../comps/ThemeSwitches';
 import { useTheme } from 'next-themes';
 
 import { useCookies } from 'react-cookie';
-import { fetchOWM } from '../pages/api/WeatherServices';
+import {
+   openMeteoFetchForecast,
+   openMeteoFetchGeocoding, OpenMeteoGeocodingResponse,
+   openMeteoSearchParse
+} from '../pages/api/WeatherServices';
 import { useQuery, QueryClient, useQueryClient } from 'react-query';
 import {
    DropdownMenu,
@@ -29,89 +34,23 @@ import {
    DropdownMenuRadioItem,
    DropdownMenuSeparator,
    DropdownMenuTrigger,
-   DropdownMenuTriggerItem,
+   DropdownMenuTriggerItem
 } from '../comps/Dropdown';
 
-const SearchBox = styled('input', {
-   all: 'unset',
-   width: 200,
-   display: 'inline-flex',
-   alignItems: 'center',
-   justifyContent: 'center',
-   borderRadius: 4,
-   padding: '0 10px',
-   height: 35,
-   fontSize: 15,
-   lineHeight: 1,
-   color: '$color12',
-   backgroundColor: '$color3',
-   '&:focus': { backgroundColor: '$color4' },
-});
-
-const spin = keyframes({
-   '0%': { transform: 'rotate(0deg)' },
-   '100%': { transform: 'rotate(360deg)' },
-});
-
-const Button = styled('button', {
-   all: 'unset',
-   backgroundColor: '$color3',
-   color: '$color11',
-   height: 35,
-   width: 35,
-   display: 'flex',
-   fontSize: 15,
-   lineHeight: 1,
-   alignItems: 'center',
-   justifyContent: 'center',
-   marginLeft: 1,
-   borderRadius: 4,
-   '&:hover': { backgroundColor: '$color4' },
-   '&[data-state=on], &:active': {
-      backgroundColor: '$color5',
-      color: '$color12',
-   },
-   '&:focus': { position: 'relative' },
-   ':first-child': {
-      '&[data-state=true]': {
-         transformOrigin: 'center',
-         animation: `${spin} 1.5s linear infinite`,
-      },
-   },
-});
-
-const Box = styled('div', {});
-
-const RightSlot = styled('div', {
-   marginLeft: 'auto',
-   paddingLeft: 20,
-   color: '$color11',
-   ':focus > &': { color: '$color2' },
-   '[data-disabled] &': { color: '$color8' },
-});
-
-const IconButton = styled('button', {
-   all: 'unset',
-   fontFamily: 'inherit',
-   borderRadius: 4,
-   // borderRadius: '100%',
-   height: 35,
-   width: 35,
-   display: 'inline-flex',
-   alignItems: 'center',
-   justifyContent: 'center',
-   color: '$color11',
-   backgroundColor: '$color3',
-   boxShadow: `0 2px 10px ${'$color7'}`,
-   '&:hover': { backgroundColor: '$color4' },
-});
+const debounce = (fn: Function, ms = 300) => {
+   let timeoutId: ReturnType<typeof setTimeout>;
+   return function(this: any, ...args: any[]) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn.apply(this, args), ms);
+   };
+};
 
 export default function Header({
-   apiCall,
-   status,
-   isFetching,
-}: {
-   apiCall: any;
+                                  apiCall,
+                                  status,
+                                  isFetching
+                               }: {
+   apiCall: (p: { timezone: string; lon: number; lat: number, place: string }) => void;
    status: string;
    isFetching: boolean;
 }) {
@@ -144,10 +83,12 @@ export default function Header({
       //    // console.log(cookies);
       //    // setTheme(cookies.settings.theme);
       // }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [theme]);
 
    useEffect(() => {
-      updatePicker(cookies.settings.theme);
+      updatePicker(cookies.settings?.theme);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
 
    /*
@@ -158,28 +99,69 @@ export default function Header({
    }, [picker]);
    */
 
+
+   const [searchList, setSearchList] = useState<OpenMeteoGeocodingResponse['results']>();
+   const [parsedSearchList, setParsedSearchList] = useState<string[]>();
+   const [isSearchListOpen, setIsSearchListOpen] = useState(false);
+
    return (
       <>
-         <SearchBox
-            placeholder="Search..."
-            aria-placeholder="Search"
-            onKeyPress={(e) => {
-               //@ts-ignore
-               e.key === 'Enter' && alert('Searching for: ' + e.target.value);
-            }}
-         />
+         <SearchBox>
+            <SearchInputBox
+               placeholder='Search...'
+               aria-placeholder='Search'
+               onKeyPress={async (e) => {
+                  //@ts-ignore
+                  // e.key === 'Enter' && alert('Searching for: ' + e.target.value);
+                  if (e.key === 'Enter') {
+
+                  }
+               }}
+               onFocus={() => {
+                  setIsSearchListOpen(true);
+               }}
+               onBlur={() =>
+                  setTimeout(() => setIsSearchListOpen(false), 500)
+               }
+               onInput={debounce(async (e:  any) => {
+                  if (e.target.value.length < 3) return;
+                  const fetch = await openMeteoFetchGeocoding(e.target.value);
+                  if (!fetch.results) return;
+                  setSearchList(fetch.results);
+                  setParsedSearchList(openMeteoSearchParse(fetch));
+                  // console.log(openMeteoSearchParse(fetch));
+                  console.log(fetch);
+               })}
+            />
+            <MagnifyingGlassIcon />
+         </SearchBox>
+         {isSearchListOpen ? <SearchList>{parsedSearchList?.map((value, index) => {
+               const searchItem = searchList?.[index];
+               const key = `${searchItem?.country_id}-${searchItem?.admin1_id || '0'}-${searchItem?.admin2_id || '0'}-${searchItem?.admin3_id || '0'}-${searchItem?.admin4_id || '0'}_${index}`;
+               return (<span key={key} onClick={() => {
+                  apiCall({
+                     lat: searchItem!.latitude,
+                     lon: searchItem!.longitude,
+                     timezone: searchItem!.timezone,
+                     place: value
+                  });
+                  setIsSearchListOpen(false);
+
+               }}>{value}</span>);
+            }
+         )}</SearchList> : <></>}
          <Button
             onClick={() => {
-               apiCall(f);
+               // apiCall({ lat: 0, lon: 0, timezone: 'America/Buenos_Aires' });
             }}
          >
             <UpdateIcon data-state={isFetching} />
          </Button>
-         <span>{status}</span>
-         <span>isFetching: {isFetching ? 'true' : 'false'}</span>
+         {/*<span>{status}</span>*/}
+         {/*<span>isFetching: {isFetching ? 'true' : 'false'}</span>*/}
          <ToggleGroup
-            type="single"
-            aria-label="Theme switcher"
+            type='single'
+            aria-label='Theme switcher'
             value={
                theme === 'light' || theme === 'dark' || theme === 'dynamic'
                   ? picker
@@ -191,20 +173,20 @@ export default function Header({
                   : (setTheme('system'), updatePicker('system'))
             }
          >
-            <ToggleGroupItem value="light" aria-label="Light mode">
+            <ToggleGroupItem value='light' aria-label='Light mode'>
                <SunIcon />
             </ToggleGroupItem>
-            <ToggleGroupItem value="dark" aria-label="Dark mode">
+            <ToggleGroupItem value='dark' aria-label='Dark mode'>
                <MoonIcon />
             </ToggleGroupItem>
-            <ToggleGroupItem value="dynamic" aria-label="Dynamic mode">
+            <ToggleGroupItem value='dynamic' aria-label='Dynamic mode'>
                <ShadowIcon />
             </ToggleGroupItem>
          </ToggleGroup>
          <Box>
             <DropdownMenu>
                <DropdownMenuTrigger asChild>
-                  <IconButton aria-label="Customise options">
+                  <IconButton aria-label='Customise options'>
                      <GearIcon />
                   </IconButton>
                </DropdownMenuTrigger>
@@ -261,13 +243,13 @@ export default function Header({
                      value={units}
                      onValueChange={setUnits}
                   >
-                     <DropdownMenuRadioItem value="metric">
+                     <DropdownMenuRadioItem value='metric'>
                         <DropdownMenuItemIndicator>
                            <DotFilledIcon />
                         </DropdownMenuItemIndicator>
                         Metric (°C, m/s)
                      </DropdownMenuRadioItem>
-                     <DropdownMenuRadioItem value="imperial">
+                     <DropdownMenuRadioItem value='imperial'>
                         <DropdownMenuItemIndicator>
                            <DotFilledIcon />
                         </DropdownMenuItemIndicator>
@@ -281,13 +263,13 @@ export default function Header({
                      value={service}
                      onValueChange={setService}
                   >
-                     <DropdownMenuRadioItem value="owm">
+                     <DropdownMenuRadioItem value='owm'>
                         <DropdownMenuItemIndicator>
                            <DotFilledIcon />
                         </DropdownMenuItemIndicator>
                         OpenWeatherMap
                      </DropdownMenuRadioItem>
-                     <DropdownMenuRadioItem value="smn">
+                     <DropdownMenuRadioItem value='smn'>
                         <DropdownMenuItemIndicator>
                            <DotFilledIcon />
                         </DropdownMenuItemIndicator>
@@ -301,3 +283,117 @@ export default function Header({
       </>
    );
 }
+
+
+const SearchBox = styled('div', {
+   all: 'unset',
+   width: 'auto',
+   display: 'inline-flex',
+   alignItems: 'center',
+   justifyContent: 'center',
+   borderRadius: 4,
+   padding: '0 0',
+   height: 35,
+   fontSize: 15,
+   lineHeight: 1,
+   color: '$color11',
+   backgroundColor: '$color3',
+   '&:focus': { backgroundColor: '$color4' },
+   '& svg': { marginInline: '10px' }
+});
+
+const SearchInputBox = styled('input', {
+   all: 'unset',
+   width: 200,
+   display: 'inline-flex',
+   alignItems: 'center',
+   justifyContent: 'center',
+   borderRadius: 4,
+   padding: '0 10px',
+   height: 35,
+   fontSize: 15,
+   lineHeight: 1,
+   color: '$color12',
+   // backgroundColor: '$color3',
+   // '&:focus': { backgroundColor: '$color4' }
+});
+
+const SearchList = styled('div', {
+   backgroundColor: '$color3',
+   minWidth: '200px',
+   height: 'auto',
+   borderRadius: 4,
+   top: 'calc((6rem - 35px) / 2 + 40px)',
+   left: 0,
+   position: 'absolute',
+   display: 'flex',
+   flexDirection: 'column',
+   zIndex: 50,
+
+   '& span:hover': { backgroundColor: '$color4' },
+   '& span': {
+      cursor: 'pointer',
+      color: '$color12',
+      padding: '8px 12px',
+      borderRadius: 4
+   }
+
+});
+
+const spin = keyframes({
+   '0%': { transform: 'rotate(0deg)' },
+   '100%': { transform: 'rotate(360deg)' }
+});
+
+const Button = styled('button', {
+   all: 'unset',
+   backgroundColor: '$color3',
+   color: '$color11',
+   height: 35,
+   width: 35,
+   display: 'flex',
+   fontSize: 15,
+   lineHeight: 1,
+   alignItems: 'center',
+   justifyContent: 'center',
+   marginLeft: 1,
+   borderRadius: 4,
+   '&:hover': { backgroundColor: '$color4' },
+   '&[data-state=on], &:active': {
+      backgroundColor: '$color5',
+      color: '$color12'
+   },
+   '&:focus': { position: 'relative' },
+   ':first-child': {
+      '&[data-state=true]': {
+         transformOrigin: 'center',
+         animation: `${spin} 1.5s linear infinite`
+      }
+   }
+});
+
+const Box = styled('div', {});
+
+const RightSlot = styled('div', {
+   marginLeft: 'auto',
+   paddingLeft: 20,
+   color: '$color11',
+   ':focus > &': { color: '$color2' },
+   '[data-disabled] &': { color: '$color8' }
+});
+
+const IconButton = styled('button', {
+   all: 'unset',
+   fontFamily: 'inherit',
+   borderRadius: 4,
+   // borderRadius: '100%',
+   height: 35,
+   width: 35,
+   display: 'inline-flex',
+   alignItems: 'center',
+   justifyContent: 'center',
+   color: '$color11',
+   backgroundColor: '$color3',
+   boxShadow: `0 2px 10px ${'$color7'}`,
+   '&:hover': { backgroundColor: '$color4' }
+});

@@ -12,9 +12,6 @@ const globalStyles = globalCss({
 import { CookiesProvider } from 'react-cookie';
 
 import {
-   useQuery,
-   useMutation,
-   useQueryClient,
    QueryClient,
    QueryClientProvider,
 } from 'react-query';
@@ -49,7 +46,7 @@ function MyApp({ Component, pageProps }: AppProps) {
    globalStyles();
    return (
       <QueryClientProvider client={queryClient}>
-         <ReactQueryDevtools initialIsOpen={false} />
+         {/*<ReactQueryDevtools initialIsOpen={false} />*/}
          <CookiesProvider>
             <ThemeProvider
                disableTransitionOnChange
@@ -59,7 +56,8 @@ function MyApp({ Component, pageProps }: AppProps) {
                   dark: darkTheme.className,
                   dynamic: dynamicTheme.className,
                }}
-               defaultTheme="system"
+               enableSystem={false}
+               defaultTheme="dark"
             >
                <style global jsx>{`
                   html,
@@ -69,6 +67,7 @@ function MyApp({ Component, pageProps }: AppProps) {
                      /* height: 100%; */
                   }
                `}</style>
+               {/*@ts-ignore*/}
                <Component {...pageProps} />
             </ThemeProvider>
          </CookiesProvider>{' '}

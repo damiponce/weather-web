@@ -6,11 +6,51 @@ import {
 } from '../../comps/Accordion';
 import TemperatureDelta from '../../comps/TemperatureDelta';
 import { styled } from '../../styles/stitches.config';
+import { OpenMeteoForecastResponse } from '../../pages/api/WeatherServices';
+import WeatherIcon from './Icon';
+const moment = require('moment');
 
-const Main = styled('div', {});
+
+export default function Daily({ data }: { data?: OpenMeteoForecastResponse.RootObject }) {
+   return (
+      <Main>
+         <Accordion type="multiple">
+            {data?.daily.time.map((day, index) => {
+               return (
+                  <AccordionItem value={day} key={index}>
+                     <DayCard>
+                        <Day>{moment(day).format('ddd D')}</Day>
+                        <WeatherIcon code={data?.daily.weathercode[index]} />
+                        <TemperatureDelta
+                           flex={1}
+                           min={Math.min(...data?.daily.temperature_2m_min)}
+                           max={Math.max(...data?.daily.temperature_2m_max)}
+                           lower={parseFloat(data?.daily.temperature_2m_min[index].toFixed(0))}
+                           upper={parseFloat(data?.daily.temperature_2m_max[index].toFixed(0))}
+                        />
+                        {/*<Rain>{data.daily.sunrise}</Rain>*/}
+                        {/*<Wind>{data.daily.sunrise}</Wind>*/}
+                     </DayCard>
+                     {/*@ts-ignore*/}
+                     <AccordionContent>
+                        Yes. It adheres to the WAI-ARAI design pattern.
+                     </AccordionContent>
+                  </AccordionItem>
+               );
+            })}
+         </Accordion>
+      </Main>
+   );
+}
+
+
+const Main = styled('div', {
+   marginBlockStart: '50px',
+});
 
 const DayCard = styled(AccordionTrigger, {
    // display: 'flex',
+   marginBottom: '1rem',
 });
 
 const Day = styled('span', {
@@ -72,51 +112,3 @@ const Wind = styled('span', {
       display: 'none',
    },
 });
-
-interface Day {
-   day: string;
-   lower: number;
-   upper: number;
-   rain: number;
-   wind: number;
-}
-
-const days: Day[] = [
-   { day: 'Sun 19', lower: 18, upper: 27, rain: 100, wind: 7.4 },
-   { day: 'Mon 20', lower: 16, upper: 24, rain: 0, wind: 11.3 },
-   { day: 'Tue 21', lower: 15, upper: 25, rain: 0, wind: 5.7 },
-   { day: 'Wed 22', lower: 15, upper: 22, rain: 0, wind: 10.4 },
-   { day: 'Thu 23', lower: 13, upper: 20, rain: 35, wind: 3.5 },
-];
-
-export default function Daily() {
-   return (
-      <Main>
-         <Accordion type="multiple">
-            {days.map((day, i) => {
-               return (
-                  <AccordionItem value={day.day} key={i}>
-                     <DayCard>
-                        <Day>{day.day}</Day>
-                        <Icon />
-                        <TemperatureDelta
-                           flex={1}
-                           min={13}
-                           max={27}
-                           lower={day.lower}
-                           upper={day.upper}
-                        />
-                        <Rain>{day.rain}%</Rain>
-                        <Wind>{day.wind} km/h</Wind>
-                     </DayCard>
-                     {/*@ts-ignore*/}
-                     <AccordionContent>
-                        Yes. It adheres to the WAI-ARAI design pattern.
-                     </AccordionContent>
-                  </AccordionItem>
-               );
-            })}
-         </Accordion>
-      </Main>
-   );
-}
