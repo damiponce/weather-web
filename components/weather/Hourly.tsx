@@ -2,13 +2,13 @@ import { useRef, useEffect } from 'react';
 import { styled } from '../../styles/stitches.config';
 import { OpenMeteoForecastResponse } from '../../pages/api/WeatherServices';
 import moment from 'moment/moment';
-import WeatherIcon from './Icon';
+import {WeatherIcon} from './WeatherCodes';
 
 const Main = styled('div', {
    display: 'flex',
    flexDirection: 'column',
    gap: '1.3rem',
-   position: 'relative'
+   position: 'relative',
 });
 
 const GRADIENT_WIDTH = 0; //25;
@@ -28,17 +28,17 @@ const MainScroll = styled('div', {
 
    '&::-webkit-scrollbar': {
       width: '0',
-      height: '5px'
+      height: '5px',
    },
 
    '&::-webkit-scrollbar-track': {
       background: '#0000',
-      padding: '2px'
+      padding: '2px',
    },
 
    '&::-webkit-scrollbar-thumb': {
       backgroundColor: '#0000',
-      borderRadius: '4px'
+      borderRadius: '4px',
    },
 
    '&:hover, &:focus': {
@@ -47,19 +47,19 @@ const MainScroll = styled('div', {
 
       '&::-webkit-scrollbar': {
          width: '0',
-         height: '5px'
+         height: '5px',
       },
 
       '&::-webkit-scrollbar-track': {
          background: '#0000',
-         padding: '2px'
+         padding: '2px',
       },
 
       '&::-webkit-scrollbar-thumb': {
          backgroundColor: '$color4',
-         borderRadius: '4px'
-      }
-   }
+         borderRadius: '4px',
+      },
+   },
 });
 
 const HourCard = styled('div', {
@@ -71,7 +71,7 @@ const HourCard = styled('div', {
    backgroundColor: '$color4',
    padding: '0.7rem 1.2rem',
    borderRadius: '0.5rem',
-   gap: '0.7rem'
+   gap: '0.7rem',
 });
 
 const Gradient = styled('div', {
@@ -85,19 +85,19 @@ const Gradient = styled('div', {
          left: {
             left: 0,
             background:
-               'linear-gradient(90deg, $color1 0%, rgba(255,0,0,0) 100%)'
+               'linear-gradient(90deg, $color1 0%, rgba(255,0,0,0) 100%)',
          },
          right: {
             right: 0,
             background:
-               'linear-gradient(270deg, $color1 0%, rgba(255,0,0,0) 100%)'
-         }
-      }
+               'linear-gradient(270deg, $color1 0%, rgba(255,0,0,0) 100%)',
+         },
+      },
    },
 
    defaultVariants: {
-      side: 'left'
-   }
+      side: 'left',
+   },
 });
 
 const Hour = styled('span', {
@@ -110,10 +110,8 @@ const Hour = styled('span', {
    textAlign: 'center',
    textTransform: 'uppercase',
    letterSpacing: '0.1em',
-   lineHeight: '1.2em'
+   lineHeight: '1.2em',
 });
-
-
 
 const Temp = styled('span', {
    all: 'unset',
@@ -123,15 +121,16 @@ const Temp = styled('span', {
    margin: '0',
    padding: '0',
    textAlign: 'center',
-   lineHeight: '1.2em'
+   lineHeight: '1.2em',
 });
 
 // ... repeat Temp for more data points
 
-
-
-
-export default function Hourly({ data }: { data?: OpenMeteoForecastResponse.RootObject }) {
+export default function Hourly({
+   data,
+}: {
+   data?: OpenMeteoForecastResponse.RootObject;
+}) {
    // const scrollRef = useRef();
    // useEffect(() => {
    //
@@ -148,11 +147,16 @@ export default function Hourly({ data }: { data?: OpenMeteoForecastResponse.Root
    //    }, {capture: true, passive: false });
    //
    // }, []);
+
+   const getTimezoneHour = () => {
+      return data?.hourly.time.indexOf(data?.current_weather.time) || 0;
+   };
+
    return (
       <Main>
          <MainScroll
             // ref={scrollRef}
-            id='hourly-scroll'
+            id="hourly-scroll"
             // onWheel={(e) => {
             //    e.preventDefault();
             //    e.stopPropagation();
@@ -167,29 +171,42 @@ export default function Hourly({ data }: { data?: OpenMeteoForecastResponse.Root
             // }}
          >
             {/*<Gradient side='left' />*/}
-            {data?.hourly.time.slice(0, 24).map((hour, index) => {
-               return (
-                  <HourCard
-                     key={index}
-                     // onWheel={(e) => {
-                     //    e.preventDefault();
-                     //    e.stopPropagation();
-                     //    var container =
-                     //       document.getElementById('hourly-scroll')!;
-                     //    var containerScrollPosition = container.scrollLeft;
-                     //    container.scrollTo({
-                     //       top: 0,
-                     //       left: containerScrollPosition + e.deltaY,
-                     //       behavior: 'auto' //if you want smooth scrolling
-                     //    });
-                     // }}
-                  >
-                     <Hour>{moment(hour).format('H[:]mm')}</Hour>
-                     <WeatherIcon code={data?.hourly.weathercode[index]} />
-                     <Temp>{data?.hourly.temperature_2m[index].toFixed(0)}º</Temp>
-                  </HourCard>
-               );
-            })}
+            {data?.hourly.time
+               .slice(getTimezoneHour(), getTimezoneHour() + 24)
+               .map((hour, index) => {
+                  return (
+                     <HourCard
+                        key={index}
+                        // onWheel={(e) => {
+                        //    e.preventDefault();
+                        //    e.stopPropagation();
+                        //    var container =
+                        //       document.getElementById('hourly-scroll')!;
+                        //    var containerScrollPosition = container.scrollLeft;
+                        //    container.scrollTo({
+                        //       top: 0,
+                        //       left: containerScrollPosition + e.deltaY,
+                        //       behavior: 'auto' //if you want smooth scrolling
+                        //    });
+                        // }}
+                     >
+                        <Hour>{moment(hour).format('H[:]mm')}</Hour>
+                        <WeatherIcon
+                           code={
+                              data?.hourly.weathercode[
+                                 getTimezoneHour() + index
+                              ]
+                           }
+                        />
+                        <Temp>
+                           {data?.hourly.temperature_2m[
+                              getTimezoneHour() + index
+                           ].toFixed(0)}
+                           º
+                        </Temp>
+                     </HourCard>
+                  );
+               })}
             {/*<Gradient side='right' />*/}
          </MainScroll>
       </Main>

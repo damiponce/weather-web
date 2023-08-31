@@ -150,13 +150,13 @@ export default function Header({
                }}>{value}</span>);
             }
          )}</SearchList> : <></>}
-         <Button
-            onClick={() => {
-               // apiCall({ lat: 0, lon: 0, timezone: 'America/Buenos_Aires' });
-            }}
-         >
-            <UpdateIcon data-state={isFetching} />
-         </Button>
+         {/*<Button*/}
+         {/*   onClick={() => {*/}
+         {/*      // apiCall({ lat: 0, lon: 0, timezone: 'America/Buenos_Aires' });*/}
+         {/*   }}*/}
+         {/*>*/}
+         {/*   <UpdateIcon data-state={isFetching} />*/}
+         {/*</Button>*/}
          {/*<span>{status}</span>*/}
          {/*<span>isFetching: {isFetching ? 'true' : 'false'}</span>*/}
          <ToggleGroup

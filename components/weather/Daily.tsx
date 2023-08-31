@@ -7,26 +7,44 @@ import {
 import TemperatureDelta from '../../comps/TemperatureDelta';
 import { styled } from '../../styles/stitches.config';
 import { OpenMeteoForecastResponse } from '../../pages/api/WeatherServices';
-import WeatherIcon from './Icon';
+import { WeatherIcon, WeatherStatus } from './WeatherCodes';
 const moment = require('moment');
 
-
-export default function Daily({ data }: { data?: OpenMeteoForecastResponse.RootObject }) {
+export default function Daily({
+   data,
+}: {
+   data?: OpenMeteoForecastResponse.RootObject;
+}) {
    return (
       <Main>
          <Accordion type="multiple">
             {data?.daily.time.map((day, index) => {
                return (
-                  <AccordionItem value={day} key={index}>
+                  <AccordionItem
+                     style={{
+                        marginBottom: '1rem',
+                     }}
+                     value={day}
+                     key={index}
+                  >
                      <DayCard>
                         <Day>{moment(day).format('ddd D')}</Day>
-                        <WeatherIcon code={data?.daily.weathercode[index]} />
+                        <WeatherStatusBlock>
+                           <WeatherIcon code={data?.daily.weathercode[index]} />
+                           <WeatherStatusText>
+                              {WeatherStatus(data?.daily.weathercode[index])}
+                           </WeatherStatusText>
+                        </WeatherStatusBlock>
                         <TemperatureDelta
                            flex={1}
                            min={Math.min(...data?.daily.temperature_2m_min)}
                            max={Math.max(...data?.daily.temperature_2m_max)}
-                           lower={parseFloat(data?.daily.temperature_2m_min[index].toFixed(0))}
-                           upper={parseFloat(data?.daily.temperature_2m_max[index].toFixed(0))}
+                           lower={parseFloat(
+                              data?.daily.temperature_2m_min[index].toFixed(0)
+                           )}
+                           upper={parseFloat(
+                              data?.daily.temperature_2m_max[index].toFixed(0)
+                           )}
                         />
                         {/*<Rain>{data.daily.sunrise}</Rain>*/}
                         {/*<Wind>{data.daily.sunrise}</Wind>*/}
@@ -43,14 +61,12 @@ export default function Daily({ data }: { data?: OpenMeteoForecastResponse.RootO
    );
 }
 
-
 const Main = styled('div', {
    marginBlockStart: '50px',
 });
 
 const DayCard = styled(AccordionTrigger, {
    // display: 'flex',
-   marginBottom: '1rem',
 });
 
 const Day = styled('span', {
@@ -66,6 +82,36 @@ const Day = styled('span', {
    width: '6.5rem',
    letterSpacing: '0.1em',
    lineHeight: '1.2em',
+});
+
+const WeatherStatusText = styled('span', {
+   all: 'unset',
+   // flex: 0.5,
+   fontSize: '0.8rem',
+   fontWeight: '700',
+   color: '$color9',
+   margin: '0',
+   padding: '0',
+   textAlign: 'left',
+   textTransform: 'uppercase',
+   maxWidth: '100px',
+   letterSpacing: '0.1em',
+   lineHeight: '1.2em',
+
+   '@bp2': {
+      display: 'none',
+   },
+});
+
+const WeatherStatusBlock = styled('div', {
+   all: 'unset',
+   display: 'flex',
+   flexDirection: 'row',
+   flexWrap: 'wrap',
+   alignItems: 'center',
+   justifyContent: 'start',
+   gap: '10px',
+   marginInlineEnd: 'auto',
 });
 
 const Icon = styled('span', {
